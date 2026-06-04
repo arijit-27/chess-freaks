@@ -472,7 +472,9 @@ router.put('/matches/:id', authenticateToken, requireAdmin, async (req, res) => 
       mvpPlayerId,
       round,
       matchNumber,
-      date
+      date,
+      isCrazyGame,
+      isGreatestGame
     } = req.body;
 
     const match = await db.matches.getById(req.params.id);
@@ -491,6 +493,8 @@ router.put('/matches/:id', authenticateToken, requireAdmin, async (req, res) => 
     if (round !== undefined) updates.round = Number(round);
     if (matchNumber !== undefined) updates.matchNumber = Number(matchNumber);
     if (date !== undefined) updates.date = date;
+    if (isCrazyGame !== undefined) updates.isCrazyGame = isCrazyGame;
+    if (isGreatestGame !== undefined) updates.isGreatestGame = isGreatestGame;
 
     // Process Elo calculations
     if (isCompleted && !match.eloProcessed) {

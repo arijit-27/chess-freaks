@@ -77,7 +77,9 @@ const MatchSchema = new Schema({
   game2Result: { type: String, enum: ['playerA', 'playerB', 'draw', 'NP', null], default: null },
   isCompleted: { type: Boolean, default: false },
   eloProcessed: { type: Boolean, default: false },
-  date: { type: String }
+  date: { type: String },
+  isCrazyGame: { type: Boolean, default: false },
+  isGreatestGame: { type: Boolean, default: false }
 }, schemaOptions);
 
 const AuctionSchema = new Schema({

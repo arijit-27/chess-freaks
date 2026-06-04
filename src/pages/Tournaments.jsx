@@ -53,6 +53,8 @@ export default function Tournaments() {
   const [editRound, setEditRound] = useState(1);
   const [editMatchNum, setEditMatchNum] = useState(1);
   const [editDate, setEditDate] = useState('');
+  const [editCrazyGame, setEditCrazyGame] = useState(false);
+  const [editGreatestGame, setEditGreatestGame] = useState(false);
   const [editError, setEditError] = useState('');
 
   // End Tournament states
@@ -296,6 +298,8 @@ export default function Tournaments() {
     setEditRound(m.round || 1);
     setEditMatchNum(m.matchNumber || 1);
     setEditDate(m.date || '');
+    setEditCrazyGame(m.isCrazyGame || false);
+    setEditGreatestGame(m.isGreatestGame || false);
     setEditError('');
   };
 
@@ -316,7 +320,9 @@ export default function Tournaments() {
         mvpPlayerId: editMvp || null,
         round: Number(editRound),
         matchNumber: Number(editMatchNum),
-        date: editDate
+        date: editDate,
+        isCrazyGame: editCrazyGame,
+        isGreatestGame: editGreatestGame
       });
       setEditingMatchId(null);
     } catch (err) {
@@ -985,8 +991,10 @@ export default function Tournaments() {
                                       <span className="match-number-tag">M {m.matchNumber}</span>
 
                                       {/* Spec badge */}
-                                      <div className="match-spec-badge">
-                                        {m.timeControl} • {m.variant}
+                                      <div className="match-spec-badge" style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                                        <span>{m.timeControl} • {m.variant}</span>
+                                        {m.isCrazyGame && <span title="Crazy Game" style={{ cursor: 'help' }}>🤪</span>}
+                                        {m.isGreatestGame && <span title="Greatest Game" style={{ cursor: 'help' }}>⭐</span>}
                                       </div>
 
                                       {/* Player A */}
@@ -1129,10 +1137,18 @@ export default function Tournaments() {
                                             </div>
                                           </div>
 
-                                          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
                                               <input type="checkbox" checked={editCompleted} onChange={(e) => setEditCompleted(e.target.checked)} />
                                               <span>Finalize Match & Process Elo Ratings</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                              <input type="checkbox" checked={editCrazyGame} onChange={(e) => setEditCrazyGame(e.target.checked)} />
+                                              <span>🤪 Crazy Game</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                              <input type="checkbox" checked={editGreatestGame} onChange={(e) => setEditGreatestGame(e.target.checked)} />
+                                              <span>⭐ Greatest Game</span>
                                             </label>
                                           </div>
 

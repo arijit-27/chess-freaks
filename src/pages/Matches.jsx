@@ -32,6 +32,8 @@ export default function Matches() {
   const [editRound, setEditRound] = useState(1);
   const [editMatchNum, setEditMatchNum] = useState(1);
   const [editDate, setEditDate] = useState('');
+  const [editCrazyGame, setEditCrazyGame] = useState(false);
+  const [editGreatestGame, setEditGreatestGame] = useState(false);
 
   const activeMatch = matches.find(m => (m.id === selectedMatchId || m._id === selectedMatchId)) || null;
   const activeTournament = activeMatch ? tournaments.find(t => (t.id === activeMatch.tournamentId || t._id === activeMatch.tournamentId)) : null;
@@ -55,6 +57,8 @@ export default function Matches() {
     setEditRound(m.round || 1);
     setEditMatchNum(m.matchNumber || 1);
     setEditDate(m.date || '');
+    setEditCrazyGame(m.isCrazyGame || false);
+    setEditGreatestGame(m.isGreatestGame || false);
     setError('');
     setSuccess('');
   };
@@ -78,7 +82,9 @@ export default function Matches() {
         mvpPlayerId: editMvp || null,
         round: Number(editRound),
         matchNumber: Number(editMatchNum),
-        date: editDate
+        date: editDate,
+        isCrazyGame: editCrazyGame,
+        isGreatestGame: editGreatestGame
       });
       setSuccess("Match details and scores successfully updated!");
       // Reload match details from updated state
@@ -240,8 +246,12 @@ export default function Matches() {
                           className={`fixture-card-selector ${selectedMatchId === (m.id || m._id) ? 'active' : ''}`}
                           onClick={() => handleSelectMatch(m)}
                         >
-                          <div className="flex-between" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                            <span>Round {m.round} • Match {m.matchNumber}</span>
+                          <div className="flex-between" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', alignItems: 'center' }}>
+                            <span style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                              Round {m.round} • Match {m.matchNumber}
+                              {m.isCrazyGame && <span title="Crazy Game" style={{ cursor: 'help' }}>🤪</span>}
+                              {m.isGreatestGame && <span title="Greatest Game" style={{ cursor: 'help' }}>⭐</span>}
+                            </span>
                             <span className={`badge ${m.isCompleted ? 'badge-completed' : 'badge-active'}`} style={{ scale: '0.85' }}>
                               {m.isCompleted ? 'Finished' : 'Pending'}
                             </span>
@@ -284,8 +294,10 @@ export default function Matches() {
                   <span className="page-subtitle" style={{ textTransform: 'uppercase', color: 'var(--primary)', fontWeight: 'bold' }}>
                     {activeTournament ? activeTournament.name : 'Chess Freaks Match'}
                   </span>
-                  <h2 style={{ fontSize: '1.35rem', fontWeight: '900', marginTop: '0.25rem' }}>
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: '900', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     Round {activeMatch.round} • Match {activeMatch.matchNumber} Fixture
+                    {activeMatch.isCrazyGame && <span title="Crazy Game" style={{ cursor: 'help' }}>🤪</span>}
+                    {activeMatch.isGreatestGame && <span title="Greatest Game" style={{ cursor: 'help' }}>⭐</span>}
                   </h2>
                 </div>
 
@@ -439,14 +451,32 @@ export default function Matches() {
                 {/* Finalize and Complete Panels */}
                 {user?.role === 'admin' && !activeMatch.isCompleted && (
                   <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
-                      <input
-                        type="checkbox"
-                        checked={editCompleted}
-                        onChange={(e) => setEditCompleted(e.target.checked)}
-                      />
-                      <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>Finalize Match & Trigger Elo Rating Recalculation</span>
-                    </label>
+                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={editCompleted}
+                          onChange={(e) => setEditCompleted(e.target.checked)}
+                        />
+                        <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>Finalize Match & Trigger Elo Rating Recalculation</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={editCrazyGame}
+                          onChange={(e) => setEditCrazyGame(e.target.checked)}
+                        />
+                        <span>🤪 Crazy Game</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={editGreatestGame}
+                          onChange={(e) => setEditGreatestGame(e.target.checked)}
+                        />
+                        <span>⭐ Greatest Game</span>
+                      </label>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       <button type="submit" className="btn btn-primary" disabled={loadingState}>
