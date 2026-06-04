@@ -67,8 +67,8 @@ const MatchSchema = new Schema({
   timeControl: { type: String, default: '10+6' },
   variant: { type: String, default: 'Standard' },
   matchLink: { type: String, default: '' },
-  playerAId: { type: Schema.Types.ObjectId, ref: 'Player', required: true },
-  playerBId: { type: Schema.Types.ObjectId, ref: 'Player', required: true },
+  playerAId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
+  playerBId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
   game1Result: { type: String, enum: ['playerA', 'playerB', 'draw', 'NP', null], default: null },
   game2Result: { type: String, enum: ['playerA', 'playerB', 'draw', 'NP', null], default: null },
   isCompleted: { type: Boolean, default: false },
@@ -215,6 +215,22 @@ const dbClient = {
       const m = new Match(matchData);
       await m.save();
       return m;
+    },
+    createMany: async (matchList) => {
+      const docs = matchList.map(m => ({
+        matchNumber: m.matchNumber || 1,
+        timeControl: m.timeControl || '10+6',
+        variant: m.variant || 'Standard',
+        matchLink: m.matchLink || '',
+        playerAId: m.playerAId || null,
+        playerBId: m.playerBId || null,
+        game1Result: null,
+        game2Result: null,
+        isCompleted: false,
+        eloProcessed: false,
+        ...m
+      }));
+      return Match.insertMany(docs);
     },
     update: async (id, updates) => {
       return Match.findByIdAndUpdate(id, updates, { new: true });

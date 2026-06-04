@@ -403,8 +403,8 @@ router.get('/matches', async (req, res) => {
 router.post('/matches', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { tournamentId, round, matchNumber, playerAId, playerBId, timeControl, variant, matchLink, date } = req.body;
-    if (!tournamentId || !playerAId || !playerBId || !round) {
-      return res.status(400).json({ error: "tournamentId, round, playerAId, and playerBId are required" });
+    if (!tournamentId || !round) {
+      return res.status(400).json({ error: "tournamentId and round are required" });
     }
 
     const tournament = await db.tournaments.getById(tournamentId);
@@ -423,8 +423,8 @@ router.post('/matches', authenticateToken, requireAdmin, async (req, res) => {
       teamBId,
       round: Number(round),
       matchNumber: Number(matchNumber) || 1,
-      playerAId,
-      playerBId,
+      playerAId: playerAId || null,
+      playerBId: playerBId || null,
       timeControl: timeControl || '10+6',
       variant: variant || 'Standard',
       matchLink: matchLink || '',
