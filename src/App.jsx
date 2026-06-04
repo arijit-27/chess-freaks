@@ -11,6 +11,7 @@ import Teams from './pages/Teams';
 import Players from './pages/Players';
 import Auction from './pages/Auction';
 import Matches from './pages/Matches';
+import Statistics from './pages/Statistics';
 
 // Icons
 import {
@@ -25,7 +26,8 @@ import {
   LogOut,
   Sun,
   Moon,
-  ChevronRight
+  ChevronRight,
+  Award
 } from 'lucide-react';
 
 function AppInner() {
@@ -63,6 +65,8 @@ function AppInner() {
         return <Auction />;
       case 'matches':
         return <Matches />;
+      case 'statistics':
+        return <Statistics />;
       case 'auth':
         return <Auth setActiveTab={setActiveTab} />;
       default:
@@ -86,6 +90,8 @@ function AppInner() {
         return { title: "Bidding Block & Drafts", desc: "Sign free agents to franchise rosters in real-time auctions" };
       case 'matches':
         return { title: "Match Control Center", desc: "Pair board matchups, record game results, and recalculate ratings" };
+      case 'statistics':
+        return { title: "Medals & Statistics Hub", desc: "Browse dynamic player rankings, tournament MVPs, and individual medal achievements" };
       case 'auth':
         return { title: "Franchise Sign In", desc: "Access administrator controls or viewer boards" };
       default:
@@ -121,6 +127,14 @@ function AppInner() {
           >
             <LayoutDashboard size={18} />
             <span>Dashboard Stats</span>
+          </button>
+
+          <button
+            className={`nav-link ${activeTab === 'statistics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('statistics')}
+          >
+            <Award size={18} />
+            <span>Statistics Hub</span>
           </button>
 
           <button

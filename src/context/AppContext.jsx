@@ -14,6 +14,7 @@ export const AppProvider = ({ children }) => {
   const [matches, setMatches] = useState([]);
   const [activeAuction, setActiveAuction] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [playerAchievements, setPlayerAchievements] = useState({});
   
   const wsRef = useRef(null);
 
@@ -364,6 +365,75 @@ export const AppProvider = ({ children }) => {
     return data;
   };
 
+  useEffect(() => {
+    const achievements = {};
+    players.forEach(p => {
+      achievements[p.id] = { mvps: 0, gold: 0, silver: 0, bronze: 0 };
+    });
+
+    tournaments.forEach(tour => {
+      const tourMatches = matches.filter(m => m.tournamentId === tour.id && m.isCompleted);
+      if (tourMatches.length === 0) return;
+
+      const playerScores = {};
+      tourMatches.forEach(m => {
+        if (m.playerAId) {
+          if (!playerScores[m.playerAId]) playerScores[m.playerAId] = 0;
+          if (m.game1Result === 'playerA') playerScores[m.playerAId] += 1;
+          else if (m.game1Result === 'draw') playerScores[m.playerAId] += 0.5;
+
+          if (m.game2Result === 'playerA') playerScores[m.playerAId] += 1;
+          else if (m.game2Result === 'draw') playerScores[m.playerAId] += 0.5;
+        }
+
+        if (m.playerBId) {
+          if (!playerScores[m.playerBId]) playerScores[m.playerBId] = 0;
+          if (m.game1Result === 'playerB') playerScores[m.playerBId] += 1;
+          else if (m.game1Result === 'draw') playerScores[m.playerBId] += 0.5;
+
+          if (m.game2Result === 'playerB') playerScores[m.playerBId] += 1;
+          else if (m.game2Result === 'draw') playerScores[m.playerBId] += 0.5;
+        }
+      });
+
+      const scoresMap = {};
+      Object.keys(playerScores).forEach(pId => {
+        const score = playerScores[pId];
+        if (!scoresMap[score]) scoresMap[score] = [];
+        scoresMap[score].push(pId);
+      });
+
+      const sortedScores = Object.keys(scoresMap)
+        .map(Number)
+        .sort((a, b) => b - a);
+
+      if (sortedScores[0] !== undefined) {
+        scoresMap[sortedScores[0]].forEach(pId => {
+          if (achievements[pId]) {
+            achievements[pId].gold += 1;
+            achievements[pId].mvps += 1;
+          }
+        });
+      }
+      if (sortedScores[1] !== undefined) {
+        scoresMap[sortedScores[1]].forEach(pId => {
+          if (achievements[pId]) {
+            achievements[pId].silver += 1;
+          }
+        });
+      }
+      if (sortedScores[2] !== undefined) {
+        scoresMap[sortedScores[2]].forEach(pId => {
+          if (achievements[pId]) {
+            achievements[pId].bronze += 1;
+          }
+        });
+      }
+    });
+
+    setPlayerAchievements(achievements);
+  }, [players, tournaments, matches]);
+
   const value = {
     user,
     token,
@@ -373,6 +443,7 @@ export const AppProvider = ({ children }) => {
     matches,
     activeAuction,
     loading,
+    playerAchievements,
     login,
     register,
     logout,

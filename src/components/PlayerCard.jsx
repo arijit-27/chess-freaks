@@ -4,7 +4,10 @@ import { Award, TrendingUp, DollarSign, Edit, Trash2, Globe, Shield } from 'luci
 import { useAppContext } from '../context/AppContext';
 
 export default function PlayerCard({ player, onEdit }) {
-  const { user, deletePlayer, teams } = useAppContext();
+  const { user, deletePlayer, teams, playerAchievements } = useAppContext();
+  
+  const ach = playerAchievements[player.id] || { gold: 0, silver: 0, bronze: 0, mvps: 0 };
+  const totalMVPs = (player.mvps || 0) + (ach.mvps || 0);
   
   // Find player's team name and logo
   const team = teams.find(t => t.id === player.teamId);
@@ -196,6 +199,32 @@ export default function PlayerCard({ player, onEdit }) {
         </div>
       </div>
 
+      {/* Medals Showcase */}
+      {(ach.gold > 0 || ach.silver > 0 || ach.bronze > 0 || ach.mvps > 0) && (
+        <div className="medals-showcase-row" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', padding: '0.35rem 0.5rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
+          {ach.gold > 0 && (
+            <span className="medal-badge-display medal-gold" title="Gold Medals (Tournament 1st Place)" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', fontSize: '0.75rem', color: '#ffd700', fontWeight: 'bold' }}>
+              🥇 {ach.gold}
+            </span>
+          )}
+          {ach.silver > 0 && (
+            <span className="medal-badge-display medal-silver" title="Silver Medals (Tournament 2nd Place)" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', fontSize: '0.75rem', color: '#c0c0c0', fontWeight: 'bold' }}>
+              🥈 {ach.silver}
+            </span>
+          )}
+          {ach.bronze > 0 && (
+            <span className="medal-badge-display medal-bronze" title="Bronze Medals (Tournament 3rd Place)" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', fontSize: '0.75rem', color: '#cd7f32', fontWeight: 'bold' }}>
+              🥉 {ach.bronze}
+            </span>
+          )}
+          {ach.mvps > 0 && (
+            <span className="medal-badge-display medal-mvp" title="Tournament MVPs" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', fontSize: '0.75rem', color: '#3b82f6', fontWeight: 'bold' }}>
+              🏆 {ach.mvps}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Stats Middle section */}
       <div className="player-stats-grid">
         <div className="stat-item">
@@ -207,7 +236,7 @@ export default function PlayerCard({ player, onEdit }) {
         <div className="stat-item">
           <span className="stat-label">MVP Awards</span>
           <span className="stat-value text-emerald" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Award size={14} /> {player.mvps || 0}
+            <Award size={14} /> {totalMVPs}
           </span>
         </div>
         <div className="stat-item" style={{ gridColumn: 'span 2' }}>
