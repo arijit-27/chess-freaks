@@ -11,6 +11,7 @@ export default function Tournaments() {
     players,
     matches,
     addTournament,
+    updateTournament,
     deleteTournament,
     addMatch,
     updateMatch,
@@ -53,6 +54,14 @@ export default function Tournaments() {
   const [editMatchNum, setEditMatchNum] = useState(1);
   const [editDate, setEditDate] = useState('');
   const [editError, setEditError] = useState('');
+
+  // End Tournament states
+  const [showEndTournamentForm, setShowEndTournamentForm] = useState(false);
+  const [mvpAward, setMvpAward] = useState('');
+  const [goldAward, setGoldAward] = useState('');
+  const [silverAward, setSilverAward] = useState('');
+  const [bronzeAward, setBronzeAward] = useState('');
+  const [endTournamentError, setEndTournamentError] = useState('');
 
   // Selected tournament details
   const [selectedTourId, setSelectedTourId] = useState(tournaments[0]?.id || tournaments[0]?._id || null);
@@ -212,6 +221,32 @@ export default function Tournaments() {
       setSelectedTourId(created.id || created._id);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleEndTournament = async (e) => {
+    e.preventDefault();
+    setEndTournamentError('');
+
+    if (!goldAward || !silverAward || !bronzeAward || !mvpAward) {
+      return setEndTournamentError("Please select players for all awards (MVP, Gold, Silver, Bronze)");
+    }
+
+    try {
+      await updateTournament(activeTournament.id || activeTournament._id, {
+        status: 'COMPLETED',
+        mvpPlayerId: mvpAward,
+        goldPlayerId: goldAward,
+        silverPlayerId: silverAward,
+        bronzePlayerId: bronzeAward
+      });
+      setShowEndTournamentForm(false);
+      setMvpAward('');
+      setGoldAward('');
+      setSilverAward('');
+      setBronzeAward('');
+    } catch (err) {
+      setEndTournamentError(err.message);
     }
   };
 
@@ -675,10 +710,34 @@ export default function Tournaments() {
                       <span>Dates: <strong>{activeTournament.startDate} to {activeTournament.endDate}</strong></span>
                     </div>
                   </div>
-                  <span className={`badge ${activeTournament.status === 'ACTIVE' ? 'badge-active' : 'badge-completed'}`}>
-                    {activeTournament.status}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {user?.role === 'admin' && activeTournament.status !== 'COMPLETED' && (
+                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: 'var(--accent-rose)', borderColor: 'rgba(244,63,94,0.3)' }} onClick={() => setShowEndTournamentForm(!showEndTournamentForm)}>
+                        {showEndTournamentForm ? 'Cancel End' : 'End Tournament'}
+                      </button>
+                    )}
+                    <span className={`badge ${activeTournament.status === 'ACTIVE' ? 'badge-active' : activeTournament.status === 'UPCOMING' ? 'badge-upcoming' : 'badge-completed'}`}>
+                      {activeTournament.status}
+                    </span>
+                  </div>
                 </div>
+
+                {activeTournament.status === 'COMPLETED' && (
+                  <div className="medals-showcase-row mt-2" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.85rem' }}>
+                      🏆 MVP: <strong>{players.find(p => (p.id === activeTournament.mvpPlayerId || p._id === activeTournament.mvpPlayerId))?.name || 'N/A'}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.85rem' }}>
+                      🥇 Gold: <strong>{players.find(p => (p.id === activeTournament.goldPlayerId || p._id === activeTournament.goldPlayerId))?.name || 'N/A'}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.85rem' }}>
+                      🥈 Silver: <strong>{players.find(p => (p.id === activeTournament.silverPlayerId || p._id === activeTournament.silverPlayerId))?.name || 'N/A'}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.85rem' }}>
+                      🥉 Bronze: <strong>{players.find(p => (p.id === activeTournament.bronzePlayerId || p._id === activeTournament.bronzePlayerId))?.name || 'N/A'}</strong>
+                    </div>
+                  </div>
+                )}
 
                 {/* Scoreboard Panel */}
                 <div className="scoreboard-panel">
@@ -736,8 +795,73 @@ export default function Tournaments() {
                 )}
               </div>
 
+              {/* End Tournament Award Selection Form */}
+              {showEndTournamentForm && activeTournament.status !== 'COMPLETED' && (
+                <div className="card mb-3" style={{ border: '1px solid rgba(244,63,94,0.35)', boxShadow: '0 0 15px rgba(244,63,94,0.04)' }}>
+                  <h3 className="mb-3" style={{ color: 'var(--accent-rose)', fontWeight: '800' }}>End Tournament & Award Achievements</h3>
+                  {endTournamentError && <p className="text-rose mb-3" style={{ fontSize: '0.85rem' }}>{endTournamentError}</p>}
+                  <form onSubmit={handleEndTournament} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="grid-2">
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>🏆 Tournament MVP</label>
+                        <select className="form-select" value={mvpAward} onChange={(e) => setMvpAward(e.target.value)}>
+                          <option value="">Select MVP Player...</option>
+                          {[...rosterA, ...rosterB].map(p => (
+                            <option key={p.id || p._id} value={p.id || p._id}>
+                              {p.name} ({teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.logo} {teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.name})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>🥇 Gold Medalist</label>
+                        <select className="form-select" value={goldAward} onChange={(e) => setGoldAward(e.target.value)}>
+                          <option value="">Select Gold Medalist...</option>
+                          {[...rosterA, ...rosterB].map(p => (
+                            <option key={p.id || p._id} value={p.id || p._id}>
+                              {p.name} ({teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.logo} {teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.name})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid-2">
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>🥈 Silver Medalist</label>
+                        <select className="form-select" value={silverAward} onChange={(e) => setSilverAward(e.target.value)}>
+                          <option value="">Select Silver Medalist...</option>
+                          {[...rosterA, ...rosterB].map(p => (
+                            <option key={p.id || p._id} value={p.id || p._id}>
+                              {p.name} ({teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.logo} {teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.name})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.75rem' }}>🥉 Bronze Medalist</label>
+                        <select className="form-select" value={bronzeAward} onChange={(e) => setBronzeAward(e.target.value)}>
+                          <option value="">Select Bronze Medalist...</option>
+                          {[...rosterA, ...rosterB].map(p => (
+                            <option key={p.id || p._id} value={p.id || p._id}>
+                              {p.name} ({teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.logo} {teams.find(t => (t.id === p.teamId || t._id === p.teamId))?.name})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <button type="submit" className="btn btn-primary" style={{ backgroundColor: 'var(--accent-rose)', borderColor: 'var(--accent-rose)', color: '#fff', alignSelf: 'flex-start' }}>
+                      Confirm & Finalize Tournament
+                    </button>
+                  </form>
+                </div>
+              )}
+
               {/* Add Match Quick Section */}
-              {user?.role === 'admin' && (
+              {user?.role === 'admin' && activeTournament.status !== 'COMPLETED' && (
                 <div className="card mb-3">
                   <button className="btn btn-secondary" onClick={() => setShowAddMatchForm(!showAddMatchForm)}>
                     <Plus size={16} /> {showAddMatchForm ? 'Close Scheduler' : 'New Match'}
@@ -915,8 +1039,7 @@ export default function Tournaments() {
                                         ) : (
                                           <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>no link</span>
                                         )}
-
-                                        {user?.role === 'admin' && (
+                                        {user?.role === 'admin' && activeTournament.status !== 'COMPLETED' && (
                                           <button className="btn btn-outline" style={{ padding: '0.35rem 0.5rem' }} onClick={() => handleOpenEdit(m)}>
                                             <Edit2 size={12} />
                                           </button>

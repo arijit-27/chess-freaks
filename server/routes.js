@@ -256,6 +256,16 @@ router.post('/tournaments', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
+router.put('/tournaments/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const updated = await db.tournaments.update(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: "Tournament not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/tournaments/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     await db.tournaments.delete(req.params.id);

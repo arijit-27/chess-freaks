@@ -159,10 +159,16 @@ async function runTest() {
 
     // 7. Finalize Match
     console.log("Finalizing match and recalculating ratings...");
-    const completeRes = await fetch(`${BASE_URL}/matches/${match.id || match._id}/complete`, {
-      method: 'POST',
+    const completeRes = await fetch(`${BASE_URL}/matches/${match.id || match._id}`, {
+      method: 'PUT',
       headers,
-      body: JSON.stringify({ mvpPlayerId: p1.id })
+      body: JSON.stringify({
+        isCompleted: true,
+        game1Result: 'playerA',
+        game2Result: 'playerB',
+        playerAId: p1.id,
+        playerBId: p3.id
+      })
     });
 
     if (!completeRes.ok) {

@@ -279,6 +279,19 @@ export const AppProvider = ({ children }) => {
     return newTour;
   };
 
+  const updateTournament = async (id, tourData) => {
+    const res = await fetch(`/api/tournaments/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(tourData)
+    });
+    const updated = await res.json();
+    if (!res.ok) throw new Error(updated.error || "Failed to update tournament");
+    setTournaments(prev => prev.map(t => (t.id === id || t._id === id) ? updated : t));
+    await fetchAllData();
+    return updated;
+  };
+
   const deleteTournament = async (id) => {
     const res = await fetch(`/api/tournaments/${id}`, {
       method: 'DELETE',
@@ -372,6 +385,23 @@ export const AppProvider = ({ children }) => {
     });
 
     tournaments.forEach(tour => {
+      // If tournament is explicitly COMPLETED and has any chosen awards, aggregate them
+      if (tour.status === 'COMPLETED' && (tour.goldPlayerId || tour.silverPlayerId || tour.bronzePlayerId || tour.mvpPlayerId)) {
+        if (tour.goldPlayerId && achievements[tour.goldPlayerId]) {
+          achievements[tour.goldPlayerId].gold += 1;
+        }
+        if (tour.silverPlayerId && achievements[tour.silverPlayerId]) {
+          achievements[tour.silverPlayerId].silver += 1;
+        }
+        if (tour.bronzePlayerId && achievements[tour.bronzePlayerId]) {
+          achievements[tour.bronzePlayerId].bronze += 1;
+        }
+        if (tour.mvpPlayerId && achievements[tour.mvpPlayerId]) {
+          achievements[tour.mvpPlayerId].mvps += 1;
+        }
+        return;
+      }
+
       const tourMatches = matches.filter(m => m.tournamentId === (tour.id || tour._id) && m.isCompleted);
       if (tourMatches.length === 0) return;
 
@@ -453,6 +483,7 @@ export const AppProvider = ({ children }) => {
     addTeam,
     deleteTeam,
     addTournament,
+    updateTournament,
     deleteTournament,
     updateMatch,
     addMatch,

@@ -55,7 +55,11 @@ const TournamentSchema = new Schema({
   startDate: { type: String },
   endDate: { type: String },
   teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
-  status: { type: String, enum: ['UPCOMING', 'ACTIVE', 'COMPLETED'], default: 'UPCOMING' }
+  status: { type: String, enum: ['UPCOMING', 'ACTIVE', 'COMPLETED'], default: 'UPCOMING' },
+  mvpPlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
+  goldPlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
+  silverPlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
+  bronzePlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null }
 }, schemaOptions);
 
 const MatchSchema = new Schema({
