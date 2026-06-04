@@ -5,7 +5,91 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { useAppContext } from '../context/AppContext';
 
 export default function Dashboard() {
-  const { players, teams, matches } = useAppContext();
+  const { players, teams, matches, tournaments } = useAppContext();
+
+  // Find active ongoing tournament
+  const activeTournament = tournaments.find(t => t.status === 'ACTIVE');
+
+  let totalScoreA = 0;
+  let totalScoreB = 0;
+  let gamePtsA = 0;
+  let gamePtsB = 0;
+  let roundPtsA = 0;
+  let roundPtsB = 0;
+  let teamA = null;
+  let teamB = null;
+
+  if (activeTournament) {
+    const teamAId = activeTournament.teams[0];
+    const teamBId = activeTournament.teams[1];
+    teamA = teams.find(t => (t.id === teamAId || t._id === teamAId));
+    teamB = teams.find(t => (t.id === teamBId || t._id === teamBId));
+
+    const tourMatches = matches.filter(m => (m.tournamentId === activeTournament.id || m.tournamentId === activeTournament._id));
+
+    const rounds = {};
+    tourMatches.forEach(m => {
+      const key = m.round;
+      if (!rounds[key]) rounds[key] = [];
+      rounds[key].push(m);
+    });
+
+    Object.keys(rounds).sort((a,b) => Number(a) - Number(b)).forEach(roundNum => {
+      let rBoardPtsA = 0;
+      let rBoardPtsB = 0;
+      let hasGames = false;
+
+      rounds[roundNum].forEach(m => {
+        if (!m.isCompleted) return;
+
+        if (m.game1Result && m.game1Result !== 'NP') {
+          hasGames = true;
+          if (m.game1Result === 'playerA') {
+            rBoardPtsA += 1;
+            gamePtsA += 1;
+          } else if (m.game1Result === 'playerB') {
+            rBoardPtsB += 1;
+            gamePtsB += 1;
+          } else if (m.game1Result === 'draw') {
+            rBoardPtsA += 0.5;
+            rBoardPtsB += 0.5;
+            gamePtsA += 0.5;
+            gamePtsB += 0.5;
+          }
+        }
+
+        if (m.game2Result && m.game2Result !== 'NP') {
+          hasGames = true;
+          if (m.game2Result === 'playerA') {
+            rBoardPtsA += 1;
+            gamePtsA += 1;
+          } else if (m.game2Result === 'playerB') {
+            rBoardPtsB += 1;
+            gamePtsB += 1;
+          } else if (m.game2Result === 'draw') {
+            rBoardPtsA += 0.5;
+            rBoardPtsB += 0.5;
+            gamePtsA += 0.5;
+            gamePtsB += 0.5;
+          }
+        }
+      });
+
+      if (hasGames) {
+        if (rBoardPtsA > rBoardPtsB) {
+          roundPtsA += 1;
+        } else if (rBoardPtsB > rBoardPtsA) {
+          roundPtsB += 1;
+        } else {
+          roundPtsA += 0.5;
+          roundPtsB += 0.5;
+        }
+      }
+    });
+
+    totalScoreA = gamePtsA + roundPtsA;
+    totalScoreB = gamePtsB + roundPtsB;
+  }
 
   // 1. Calculate General Stats
   const activePlayersCount = players.length;
@@ -137,7 +221,130 @@ export default function Dashboard() {
         .mvp-item:last-child {
           border-bottom: none;
         }
+        /* Esports Scoreboard styles */
+        .scoreboard-panel {
+          background: radial-gradient(circle at top, rgba(255,215,0,0.05) 0%, rgba(20,20,22,0.6) 100%);
+          border: 1px solid rgba(255,215,0,0.15);
+          border-radius: 12px;
+          padding: 1.5rem;
+          margin-top: 0.75rem;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .scoreboard-vs-grid {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+        .team-score-block {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .team-score-name {
+          font-size: 1.1rem;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          color: var(--text-primary);
+        }
+        .team-score-logo {
+          font-size: 2rem;
+          filter: drop-shadow(0 0 8px rgba(255,215,0,0.2));
+        }
+        .score-display-number {
+          font-size: 3rem;
+          font-weight: 900;
+          color: var(--primary);
+          text-shadow: 0 0 15px rgba(255,215,0,0.3);
+          line-height: 1;
+        }
+        .scoreboard-versus-tag {
+          font-weight: bold;
+          font-size: 0.75rem;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          background: rgba(255,255,255,0.02);
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          border: 1px solid var(--border-color);
+        }
+        .scoreboard-details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1.5rem;
+          border-top: 1px solid rgba(255,255,255,0.05);
+          padding-top: 1rem;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
       `}</style>
+
+      {/* Live Ongoing Tournament Panel */}
+      {activeTournament ? (
+        <div className="card" style={{ border: '1px solid rgba(255,215,0,0.25)', padding: '1.5rem', boxShadow: '0 0 20px rgba(255,215,0,0.04)' }}>
+          <div className="flex-between" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+            <div>
+              <span className="card-title-sub" style={{ color: 'var(--primary)', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                ⚡ LIVE ONGOING TOURNAMENT
+              </span>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: '900', marginTop: '0.25rem' }}>{activeTournament.name}</h2>
+              <div style={{ display: 'flex', gap: '0.8rem', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                <span>Format: <strong>{activeTournament.format}</strong></span>
+                <span>•</span>
+                <span>Dates: <strong>{activeTournament.startDate} to {activeTournament.endDate}</strong></span>
+              </div>
+            </div>
+            <div>
+              <span className="badge badge-active" style={{ fontSize: '0.75rem' }}>
+                {activeTournament.status}
+              </span>
+            </div>
+          </div>
+
+          <div className="scoreboard-panel">
+            <div className="scoreboard-vs-grid">
+              {/* Team A */}
+              <div className="team-score-block">
+                <span className="team-score-logo">{teamA?.logo || '♟'}</span>
+                <span className="team-score-name">{teamA?.name || 'Team A'}</span>
+              </div>
+
+              {/* Scores */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                <span className="score-display-number">{totalScoreA.toFixed(1)}</span>
+                <span className="scoreboard-versus-tag">VS</span>
+                <span className="score-display-number">{totalScoreB.toFixed(1)}</span>
+              </div>
+
+              {/* Team B */}
+              <div className="team-score-block">
+                <span className="team-score-logo">{teamB?.logo || '♟'}</span>
+                <span className="team-score-name">{teamB?.name || 'Team B'}</span>
+              </div>
+            </div>
+
+            {/* Breakdown */}
+            <div className="scoreboard-details-grid">
+              <div>
+                <p><strong>Game Wins</strong>: {gamePtsA.toFixed(1)} pts</p>
+                <p><strong>Round Wins</strong>: {roundPtsA.toFixed(1)} pts</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p><strong>Game Wins</strong>: {gamePtsB.toFixed(1)} pts</p>
+                <p><strong>Round Wins</strong>: {roundPtsB.toFixed(1)} pts</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="card text-center" style={{ padding: '2rem 1.5rem', color: 'var(--text-secondary)', border: '1px dashed var(--border-color)' }}>
+          <span className="card-title-sub" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: '800' }}>⚡ LIVE ONGOING TOURNAMENT</span>
+          <p style={{ fontSize: '0.85rem' }}>No active tournament is currently running. Setup or activate a tournament in the control room!</p>
+        </div>
+      )}
 
       {/* Analytics Summary Panels */}
       <div className="stats-summary-grid">

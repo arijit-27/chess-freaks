@@ -79,7 +79,7 @@ function AppInner() {
       case 'landing':
         return { title: "Welcome to Chess Freaks", desc: "The ultimate esport tournament and player auction manager" };
       case 'dashboard':
-        return { title: "Franchise Dashboard", desc: "Live standings, stats and highest-rated master charts" };
+        return { title: "Dashboard", desc: "Live standings, stats and highest-rated master charts" };
       case 'tournaments':
         return { title: "Tournament Control Room", desc: "Configure formats, generate brackets, and schedule match fixtures" };
       case 'teams':
