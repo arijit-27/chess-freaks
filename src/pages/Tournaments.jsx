@@ -21,6 +21,7 @@ export default function Tournaments() {
   // Create Tournament states
   const [showAddForm, setShowAddForm] = useState(false);
   const [name, setName] = useState('');
+  const [format, setFormat] = useState('Team VS Team');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [teamASelection, setTeamASelection] = useState('');
@@ -211,12 +212,13 @@ export default function Tournaments() {
     try {
       const created = await addTournament({
         name,
-        format: 'Team VS Team',
+        format,
         startDate,
         endDate,
         teams: [teamASelection, teamBSelection]
       });
       setName('');
+      setFormat('Team VS Team');
       setTeamASelection('');
       setTeamBSelection('');
       setShowAddForm(false);
@@ -620,6 +622,15 @@ export default function Tournaments() {
               />
             </div>
 
+            <div className="form-group">
+              <label className="form-label">Tournament Format / Template</label>
+              <select className="form-select" value={format} onChange={(e) => setFormat(e.target.value)}>
+                <option value="Team VS Team">Team VS Team (Standard Round Robin)</option>
+                <option value="Two Team Nomination">Two Team Nomination (Nominate players per match)</option>
+                <option value="Two Team Revival">Two Team Revival (Loser goes to revival, winner stays)</option>
+              </select>
+            </div>
+
             <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Team A (Home)</label>
@@ -797,6 +808,32 @@ export default function Tournaments() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Revival List for Two Team Revival format */}
+                {activeTournament.format === 'Two Team Revival' && (
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1rem', marginTop: '0.75rem' }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      🔄 Revival List (Losers)
+                    </h4>
+                    {activeTournament.revivalList && activeTournament.revivalList.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        {activeTournament.revivalList.map((pId, idx) => {
+                          const p = players.find(pl => (pl.id === pId || pl._id === pId));
+                          const team = p ? teams.find(t => (t.id === p.teamId || t._id === p.teamId)) : null;
+                          return (
+                            <div key={pId + '-' + idx} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-secondary)', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                              <span style={{ fontWeight: 'bold', color: 'var(--text-secondary)' }}>#{idx+1}</span>
+                              <span>{p ? p.name : 'Unknown Player'}</span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>({team?.logo || '♟'} {team?.name || 'Free Agent'})</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>No players in the revival list yet.</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -1081,16 +1118,18 @@ export default function Tournaments() {
                                             <div className="form-group" style={{ marginBottom: 0 }}>
                                               <label className="form-label" style={{ fontSize: '0.7rem' }}>Player A</label>
                                               <select className="form-select" style={{ padding: '0.4rem 0.6rem' }} value={editPlayerA} onChange={(e) => setEditPlayerA(e.target.value)}>
+                                                <option value="">-- To Be Decided --</option>
                                                 {rosterA.map(p => (
-                                                  <option key={p.id} value={p.id}>{p.name} ({p.elo})</option>
+                                                  <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.elo})</option>
                                                 ))}
                                               </select>
                                             </div>
                                             <div className="form-group" style={{ marginBottom: 0 }}>
                                               <label className="form-label" style={{ fontSize: '0.7rem' }}>Player B</label>
                                               <select className="form-select" style={{ padding: '0.4rem 0.6rem' }} value={editPlayerB} onChange={(e) => setEditPlayerB(e.target.value)}>
+                                                <option value="">-- To Be Decided --</option>
                                                 {rosterB.map(p => (
-                                                  <option key={p.id} value={p.id}>{p.name} ({p.elo})</option>
+                                                  <option key={p.id || p._id} value={p.id || p._id}>{p.name} ({p.elo})</option>
                                                 ))}
                                               </select>
                                             </div>

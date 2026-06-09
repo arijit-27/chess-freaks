@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 const socket = require('./socket');
+const tournamentHelper = require('./tournamentHelper');
 
 const JWT_SECRET = 'chessfreaks_secret_key_2026';
 
@@ -489,8 +490,8 @@ router.put('/matches/:id', authenticateToken, requireAdmin, async (req, res) => 
     if (!match) return res.status(404).json({ error: "Match not found" });
 
     const updates = {};
-    if (playerAId !== undefined) updates.playerAId = playerAId;
-    if (playerBId !== undefined) updates.playerBId = playerBId;
+    if (playerAId !== undefined) updates.playerAId = playerAId || null;
+    if (playerBId !== undefined) updates.playerBId = playerBId || null;
     if (timeControl !== undefined) updates.timeControl = timeControl;
     if (variant !== undefined) updates.variant = variant;
     if (matchLink !== undefined) updates.matchLink = matchLink;
@@ -564,6 +565,13 @@ router.put('/matches/:id', authenticateToken, requireAdmin, async (req, res) => 
     }
 
     const updatedMatch = await db.matches.update(req.params.id, updates);
+
+    // If revival match format, handle progression logic
+    try {
+      await tournamentHelper.handleRevivalMatchCompletion(match, updates);
+    } catch (progressionError) {
+      console.error("Failed to run revival progression logic:", progressionError);
+    }
 
     await recalculateTeamStandings();
     const allTeams = await db.teams.getAll();
@@ -779,6 +787,34 @@ async function generateTournamentFixtures(tour) {
         });
       }
     }
+  } else if (format === 'Two Team Nomination') {
+    // Generate 5 empty matches where teams are set but players are null
+    for (let i = 1; i <= 5; i++) {
+      scheduledMatches.push({
+        tournamentId: tour._id,
+        teamAId: teams[0],
+        teamBId: teams[1],
+        round: 1,
+        matchNumber: i,
+        playerAId: null,
+        playerBId: null,
+        stage: `Nomination Match ${i}`,
+        date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      });
+    }
+  } else if (format === 'Two Team Revival') {
+    // Generate the first match, player A and player B are null (to be nominated)
+    scheduledMatches.push({
+      tournamentId: tour._id,
+      teamAId: teams[0],
+      teamBId: teams[1],
+      round: 1,
+      matchNumber: 1,
+      playerAId: null,
+      playerBId: null,
+      stage: `Revival Match 1`,
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    });
   }
 
   await db.matches.createMany(scheduledMatches);

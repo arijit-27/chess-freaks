@@ -51,11 +51,12 @@ const PlayerSchema = new Schema({
 
 const TournamentSchema = new Schema({
   name: { type: String, required: true },
-  format: { type: String, required: true, enum: ['Round Robin', 'League Format', 'Swiss System', 'Knockout', 'Long Format', 'Team VS Team'] },
+  format: { type: String, required: true, enum: ['Round Robin', 'League Format', 'Swiss System', 'Knockout', 'Long Format', 'Team VS Team', 'Two Team Nomination', 'Two Team Revival'] },
   startDate: { type: String },
   endDate: { type: String },
   teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
   status: { type: String, enum: ['UPCOMING', 'ACTIVE', 'COMPLETED'], default: 'UPCOMING' },
+  revivalList: [{ type: Schema.Types.ObjectId, ref: 'Player' }],
   mvpPlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
   goldPlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
   silverPlayerId: { type: Schema.Types.ObjectId, ref: 'Player', default: null },
