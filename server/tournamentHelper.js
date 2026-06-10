@@ -58,47 +58,120 @@ async function handleRevivalMatchCompletion(match, updates) {
     return;
   }
 
-  // 2. Put the loser on the tournament's revival list
-  const currentRevivalList = tournament.revivalList ? [...tournament.revivalList] : [];
-  
-  // Add to revival list if not already present, or add anyway to track sequence
-  currentRevivalList.push(loserId);
-  await db.tournaments.update(tournament._id, { revivalList: currentRevivalList });
+  // 2. Determine which team the loser belongs to
+  const loserPlayer = await db.players.getById(loserId);
+  if (!loserPlayer) {
+    console.log(`Loser player ${loserId} not found.`);
+    return;
+  }
+
+  const isLoserTeamA = loserPlayer.teamId && loserPlayer.teamId.toString() === match.teamAId.toString();
+
+  // Get current revival lists
+  let listA = tournament.revivalListA ? [...tournament.revivalListA] : [];
+  let listB = tournament.revivalListB ? [...tournament.revivalListB] : [];
+  let listAll = tournament.revivalList ? [...tournament.revivalList] : [];
+
+  // Add the loser to the appropriate team's list
+  if (isLoserTeamA) {
+    listA.push(loserId);
+  } else {
+    listB.push(loserId);
+  }
+  listAll.push(loserId);
+
+  // Fetch rosters for Team A and Team B to check for "all out"
+  const allPlayers = await db.players.getAll();
+  const rosterA = allPlayers.filter(p => p.teamId && p.teamId.toString() === match.teamAId.toString());
+  const rosterB = allPlayers.filter(p => p.teamId && p.teamId.toString() === match.teamBId.toString());
+
+  const rosterAIds = rosterA.map(p => p._id.toString());
+  const rosterBIds = rosterB.map(p => p._id.toString());
+
+  const listAIds = listA.map(id => id.toString());
+  const listBIds = listB.map(id => id.toString());
+
+  // Check if either team is now "all out"
+  const isTeamAAllOut = rosterAIds.length > 0 && rosterAIds.every(id => listAIds.includes(id));
+  const isTeamBAllOut = rosterBIds.length > 0 && rosterBIds.every(id => listBIds.includes(id));
+
+  let nextPlayerAId = null;
+  let nextPlayerBId = null;
+  let updatedAllOutCountA = tournament.allOutCountA || 0;
+  let updatedAllOutCountB = tournament.allOutCountB || 0;
+
+  const isWinnerTeamA = winnerId.toString() === playerAId.toString();
+
+  if (isTeamAAllOut && isLoserTeamA) {
+    // Team A is all out! Team B gets +1 point.
+    updatedAllOutCountA += 1;
+    console.log("Team A is ALL OUT! Team B gets +1 point.");
+
+    // Revive the player added last to listA (LIFO pop)
+    const revivedId = listA.pop();
+    const lastIdx = listAll.lastIndexOf(revivedId);
+    if (lastIdx !== -1) listAll.splice(lastIdx, 1);
+
+    nextPlayerAId = revivedId; // Revived Team A player
+    nextPlayerBId = winnerId;  // Winner stays (Team B player)
+  } else if (isTeamBAllOut && !isLoserTeamA) {
+    // Team B is all out! Team A gets +1 point.
+    updatedAllOutCountB += 1;
+    console.log("Team B is ALL OUT! Team A gets +1 point.");
+
+    // Revive the player added last to listB (LIFO pop)
+    const revivedId = listB.pop();
+    const lastIdx = listAll.lastIndexOf(revivedId);
+    if (lastIdx !== -1) listAll.splice(lastIdx, 1);
+
+    nextPlayerAId = winnerId;  // Winner stays (Team A player)
+    nextPlayerBId = revivedId; // Revived Team B player
+  } else {
+    // Standard progression: winner stays, opponent is null (to be nominated)
+    if (isWinnerTeamA) {
+      nextPlayerAId = winnerId;
+      nextPlayerBId = null;
+    } else {
+      nextPlayerAId = null;
+      nextPlayerBId = winnerId;
+    }
+  }
+
+  // Update tournament with new lists and counters
+  await db.tournaments.update(tournament._id, {
+    revivalList: listAll,
+    revivalListA: listA,
+    revivalListB: listB,
+    allOutCountA: updatedAllOutCountA,
+    allOutCountB: updatedAllOutCountB
+  });
 
   // 3. Create or update the next match (Match Number + 1)
   const nextMatchNum = match.matchNumber + 1;
   const allMatches = await db.matches.getByTournament(tournament._id);
   const nextMatch = allMatches.find(m => m.matchNumber === nextMatchNum);
 
-  // Determine if the winner is from Team A
-  const isWinnerTeamA = winnerId.toString() === playerAId.toString();
-
   if (nextMatch) {
-    // Next match already exists, update the winner in their correct slot
     const nextUpdates = {};
-    if (isWinnerTeamA) {
-      nextUpdates.playerAId = winnerId;
-    } else {
-      nextUpdates.playerBId = winnerId;
-    }
+    if (nextPlayerAId !== null) nextUpdates.playerAId = nextPlayerAId;
+    if (nextPlayerBId !== null) nextUpdates.playerBId = nextPlayerBId;
     await db.matches.update(nextMatch._id, nextUpdates);
-    console.log(`Updated existing match ${nextMatchNum} with winner ${winnerId}`);
+    console.log(`Updated existing match ${nextMatchNum} with players A:${nextPlayerAId} B:${nextPlayerBId}`);
   } else {
-    // Create new next match
     await db.matches.create({
       tournamentId: tournament._id,
       teamAId: match.teamAId,
       teamBId: match.teamBId,
       round: 1,
       matchNumber: nextMatchNum,
-      playerAId: isWinnerTeamA ? winnerId : null,
-      playerBId: !isWinnerTeamA ? winnerId : null,
+      playerAId: nextPlayerAId,
+      playerBId: nextPlayerBId,
       timeControl: match.timeControl || '10+6',
       variant: match.variant || 'Standard',
       stage: `Revival Match ${nextMatchNum}`,
       date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
-    console.log(`Created new match ${nextMatchNum} with winner ${winnerId} in its slot.`);
+    console.log(`Created new match ${nextMatchNum} with players A:${nextPlayerAId} B:${nextPlayerBId}`);
   }
 }
 

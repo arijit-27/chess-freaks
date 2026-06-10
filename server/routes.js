@@ -377,8 +377,8 @@ async function recalculateTeamStandings() {
         }
       }
 
-      const finalScoreA = tourBoardPointsA + tourPointsA;
-      const finalScoreB = tourBoardPointsB + tourPointsB;
+      const finalScoreA = tourBoardPointsA + tourPointsA + (tour.allOutCountB || 0);
+      const finalScoreB = tourBoardPointsB + tourPointsB + (tour.allOutCountA || 0);
 
       if (teamStats[teamAId]) teamStats[teamAId].boardPoints += tourBoardPointsA;
       if (teamStats[teamBId]) teamStats[teamBId].boardPoints += tourBoardPointsB;
